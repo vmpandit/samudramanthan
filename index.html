@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Samudra Manthan: The Eternal Churn</title>
+
+    <!-- External Libs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+    <style>
+        /* --- FONTS & VARS --- */
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap');
+
+        :root {
+            --glass-bg: rgba(20, 30, 48, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-shine: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+
+            --color-gold: #FFD700;
+            --color-blue: #4facfe;
+            --color-red: #ff0844;
+            --color-text: #fff;
+
+            --font-title: 'Cinzel', serif;
+            --font-body: 'Lato', sans-serif;
+        }
+
+        /* --- LAYOUT --- */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: var(--font-body);
+            background: #0f2027;
+            color: var(--color-text);
+            height: 100vh; width: 100vw;
+            overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* --- BACKGROUND --- */
+        #cosmos-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
+        }
+
+        /* --- GLASS UI --- */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px) saturate(120%);
+            -webkit-backdrop-filter: blur(16px) saturate(120%);
+            border: 1px solid var(--glass-border);
+            border-top: 1px solid var(--glass-shine);
+            box-shadow: var(--glass-shadow);
+            border-radius: 24px;
+            padding: 24px;
+            width: 90%; max-width: 480px;
+            display: flex; flex-direction: column; align-items: center;
+            transition: all 0.4s ease;
+            position: relative;
+        }
+
+        /* --- TYPOGRAPHY --- */
+        h1, h2, h3 { margin: 0; font-family: var(--font-title); text-align: center; }
+        h1 { 
+            font-size: 2.2rem; 
+            background: linear-gradient(to right, #fff, #b6fbff); 
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+            margin-bottom: 8px; text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        h2 { font-size: 1rem; color: var(--color-gold); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 16px; opacity: 0.9; }
+        p { text-align: center; line-height: 1.5; font-size: 0.95rem; margin-bottom: 20px; color: rgba(255,255,255,0.9); }
+
+        /* --- BUTTONS & INPUTS --- */
+        .btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 16px; width: 100%;
+            border-radius: 50px; font-size: 1rem; font-weight: 700;
+            margin-bottom: 12px; cursor: pointer;
+            transition: all 0.2s; backdrop-filter: blur(4px);
+        }
+        .btn:active { transform: scale(0.96); background: rgba(255,255,255,0.2); }
+        .btn-primary { 
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.6), rgba(0, 242, 254, 0.6)); 
+            border: 1px solid rgba(79, 172, 254, 0.5);
+            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.2);
+        }
+        .btn-danger { 
+            background: linear-gradient(135deg, rgba(255, 8, 68, 0.6), rgba(255, 177, 153, 0.6)); 
+            border: 1px solid rgba(255, 8, 68, 0.5);
+        }
+
+        input {
+            width: 100%; padding: 14px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px; color: white; text-align: center; font-size: 1.1rem; margin-bottom: 16px; outline: none;
+        }
+
+        /* --- ASSETS & ANIMATIONS --- */
+        .churn-container {
+            width: 260px; height: 260px; margin: 20px auto; position: relative;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .churn-mask {
+            width: 100%; height: 100%; border-radius: 50%; overflow: hidden;
+            box-shadow: 0 0 40px rgba(79, 172, 254, 0.2);
+            border: 2px solid rgba(255,255,255,0.1); background: #000;
+        }
+        #churn-dial { width: 100%; height: 100%; object-fit: cover; will-change: transform; transition: transform 0.1s ease-out; }
+        .tap-hint {
+            position: absolute; font-family: var(--font-title); font-weight: bold; font-size: 2rem;
+            color: rgba(255,255,255,0.2); pointer-events: none; animation: pulse 1.5s infinite;
+        }
+
+        .portrait-frame {
+            width: 140px; height: 140px; border-radius: 50%; border: 3px solid var(--color-gold);
+            margin: 0 auto 15px auto; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.6); background: #000;
+        }
+        #role-img { width: 200%; height: 100%; object-fit: cover; object-position: 0% 0%; }
+        .asura-crop { object-position: 100% 0% !important; }
+
+        .treasure-frame {
+            width: 120px; height: 120px; background: rgba(0,0,0,0.3); border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.2); margin: 10px auto; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .icon-sprite { width: 400%; height: 100%; object-fit: cover; object-position: 0% 0%; }
+        /* Sprite positions: Amrita(0%), Poison(33.3%), Cow(66.6%), Elephant(100%) */
+        .icon-amrita { object-position: 0% 0%; }
+        .icon-poison { object-position: 33.33% 0%; }
+        .icon-cow    { object-position: 66.66% 0%; }
+        .icon-elephant { object-position: 100% 0%; }
+
+        /* --- UTILS --- */
+        .screen { display: none; width: 100%; flex-direction: column; align-items: center; animation: fadeIn 0.5s ease; }
+        .screen.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0% { opacity: 0.2; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } 100% { opacity: 0.2; transform: scale(1); } }
+
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.9); padding: 12px 24px; border-radius: 50px;
+            font-size: 0.9rem; pointer-events: none; opacity: 0; transition: opacity 0.3s;
+            z-index: 100; border: 1px solid rgba(255,255,255,0.1); white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="cosmos-canvas"></canvas>
+
+    <!-- HOME -->
+    <div id="screen-home" class="screen active">
+        <div class="glass-panel">
+            <div style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden; margin-bottom: 20px; border: 2px solid rgba(255,255,255,0.2);">
+                <img src="./mount_mandara_churn.png" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'">
+            </div>
+            <h1>SAMUDRA</h1>
+            <h2>MANTHAN</h2>
+            <p>The Eternal Cosmic Churn</p>
+            <button class="btn btn-primary" onclick="Game.host()">Host Universe</button>
+            <button class="btn" onclick="Game.joinMenu()">Join Churn</button>
+        </div>
+    </div>
+
+    <!-- HOST LOBBY -->
+    <div id="screen-host" class="screen">
+        <div class="glass-panel">
+            <h2>Cosmic Beacon</h2>
+            <div style="background: white; padding: 10px; border-radius: 12px; margin-bottom: 10px;">
+                <div id="qrcode"></div>
+            </div>
+            <h1 id="host-code" style="font-family: monospace; letter-spacing: 5px;">...</h1>
+            <div id="player-list" style="width: 100%; max-height: 150px; overflow-y: auto; text-align: left; margin: 15px 0; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 10px;"></div>
+            <button id="start-btn" class="btn btn-primary" disabled onclick="Host.start()">Begin Churning</button>
+            <button class="btn btn-danger" onclick="location.reload()">Back</button>
+        </div>
+    </div>
+
+    <!-- JOIN -->
+    <div id="screen-join" class="screen">
+        <div class="glass-panel">
+            <h2>Enter the Void</h2>
+            <input type="text" id="join-name" placeholder="Your Name (e.g. Shiva)" maxlength="12">
+            <input type="text" id="join-code" placeholder="Room Code" maxlength="4" style="text-transform: uppercase;">
+            <button class="btn btn-primary" onclick="Client.connect()">Connect</button>
+            <button class="btn" onclick="UI.show('screen-home')">Back</button>
+        </div>
+    </div>
+
+    <!-- ROLE REVEAL -->
+    <div id="screen-role" class="screen">
+        <div class="glass-panel">
+            <h2>Your Destiny</h2>
+            <div class="portrait-frame">
+                <img id="role-img" src="./roles_portraits.png" onerror="this.style.display='none'">
+            </div>
+            <h1 id="role-name">...</h1>
+            <p id="role-desc">...</p>
+            <div id="role-secret" style="width: 100%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; font-size: 0.85rem; color: var(--color-gold); text-align: center;"></div>
+            <button class="btn btn-primary" style="margin-top: 20px;" onclick="UI.show('screen-play')">Enter Ocean</button>
+        </div>
+    </div>
+
+    <!-- GAMEPLAY -->
+    <div id="screen-play" class="screen">
+        <!-- HEADER -->
+        <div style="position: absolute; top: 10px; left: 0; width: 100%; padding: 0 20px; display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700; opacity: 0.8; z-index: 10;">
+            <span>STABILITY <span id="stability-val" style="color: var(--color-blue);">100%</span></span>
+            <span>ROUND <span id="round-val">1</span>/7</span>
+        </div>
+
+        <div class="glass-panel" style="margin-top: 50px;">
+            <h2 id="phase-name" style="font-size: 1.4rem; color: #fff;">THE CHURNING</h2>
+            <p id="phase-msg">Tap the mountain to churn!</p>
+
+            <div id="game-content" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+                <!-- DYNAMIC CONTENT -->
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Notification</div>
+
+    <script>
+        // --- AUDIO ENGINE ---
+        const AudioFX = {
+            ctx: null,
+            init: () => { if (!AudioFX.ctx) AudioFX.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+            play: (type) => {
+                if (!AudioFX.ctx) AudioFX.init();
+                if (AudioFX.ctx.state === 'suspended') AudioFX.ctx.resume();
+
+                const now = AudioFX.ctx.currentTime;
+                const osc = AudioFX.ctx.createOscillator();
+                const gain = AudioFX.ctx.createGain();
+                osc.connect(gain); gain.connect(AudioFX.ctx.destination);
+
+                if (type === 'tap') {
+                    osc.type = 'triangle'; 
+                    osc.frequency.setValueAtTime(80, now); 
+                    osc.frequency.exponentialRampToValueAtTime(30, now + 0.1);
+                    gain.gain.setValueAtTime(0.2, now); 
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now); osc.stop(now + 0.1);
+                } else if (type === 'alert') {
+                    osc.type = 'sine'; 
+                    osc.frequency.setValueAtTime(400, now); 
+                    osc.frequency.linearRampToValueAtTime(600, now + 0.15);
+                    gain.gain.setValueAtTime(0.1, now); 
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                    osc.start(now); osc.stop(now + 0.6);
+                }
+            }
+        };
+
+        // --- UI MANAGER ---
+        const UI = {
+            show: (id) => {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById(id).classList.add('active');
+            },
+            toast: (msg) => {
+                const t = document.getElementById('toast');
+                t.innerText = msg; t.style.opacity = 1;
+                setTimeout(() => t.style.opacity = 0, 3000);
+            },
+            getIconClass: (itemName) => {
+                if(itemName.includes("Amrita")) return "icon-amrita";
+                if(itemName.includes("Poison") || itemName.includes("Halahala")) return "icon-poison";
+                if(itemName.includes("Cow") || itemName.includes("Kamadhenu")) return "icon-cow";
+                if(itemName.includes("Elephant") || itemName.includes("Airavata")) return "icon-elephant";
+                return "icon-amrita";
+            }
+        };
+
+        // --- GAME LOGIC ---
+        const Game = {
+            isHost: false,
+            host: () => { Game.isHost = true; Host.init(); },
+            joinMenu: () => {
+                const params = new URLSearchParams(location.search);
+                if(params.get('code')) document.getElementById('join-code').value = params.get('code');
+                UI.show('screen-join');
+            }
+        };
+
+        // --- HOST LOGIC (SERVER) ---
+        const Host = {
+            peer: null,
+            code: '',
+            players: [],
+            state: { round: 1, stability: 100, phase: 'LOBBY', churns: 0, votes: {}, phaseItem: '' },
+
+            init: () => {
+                Host.code = Math.random().toString(36).substring(2,6).toUpperCase();
+                UI.show('screen-host');
+                document.getElementById('host-code').innerText = Host.code;
+
+                new QRCode(document.getElementById('qrcode'), {
+                    text: location.href.split('?')[0] + "?code=" + Host.code,
+                    width: 128, height: 128
+                });
+
+                Host.peer = new Peer("sm-host-" + Host.code);
+                Host.peer.on('error', err => UI.toast("Net Error: " + err.type));
+                Host.peer.on('connection', conn => {
+                    conn.on('data', data => Host.handleData(conn, data));
+                });
+            },
+
+            handleData: (conn, data) => {
+                if(data.type === 'JOIN') {
+                    const p = { id: conn.peer, name: data.name, conn: conn, role: null };
+                    Host.players.push(p);
+                    Host.updateLobby();
+                    conn.send({ type: 'WELCOME' });
+                }
+                else if(data.type === 'CHURN') {
+                    Host.state.churns++;
+                    // Broadcast visual effect to everyone
+                    Host.broadcast({ type: 'FX_CHURN' });
+                }
+                else if(data.type === 'VOTE') {
+                    Host.state.votes[conn.peer] = data.val;
+                    // Check if all players voted
+                    if(Object.keys(Host.state.votes).length >= Host.players.length) {
+                        Host.resolveRound();
+                    }
+                }
+            },
+
+            updateLobby: () => {
+                const list = document.getElementById('player-list');
+                list.innerHTML = Host.players.map(p => `<div style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.05);">✦ ${p.name}</div>`).join('');
+                document.getElementById('start-btn').disabled = Host.players.length < 1;
+                document.getElementById('start-btn').innerText = Host.players.length < 2 ? "Waiting for Souls..." : "Begin Journey";
+            },
+
+            start: () => {
+                // Role Assignment Logic
+                // 1 Asura for every 3 players. Remainder are Devas.
+                const roles = [];
+                const total = Host.players.length;
+                const asuraCount = Math.max(1, Math.floor(total / 3));
+
+                for(let i=0; i<asuraCount; i++) roles.push('Asura');
+                while(roles.length < total) roles.push('Deva');
+
+                // Shuffle
+                roles.sort(() => Math.random() - 0.5);
+
+                Host.players.forEach((p, i) => {
+                    p.role = roles[i];
+                    p.conn.send({ 
+                        type: 'ROLE', 
+                        role: p.role, 
+                        desc: p.role === 'Deva' ? 'Guardian of Light' : 'Agent of Chaos',
+                        secret: p.role === 'Asura' ? 'Goal: Reduce Stability to 0 or keep Poison.' : 'Goal: Keep Stability high. Discard Poison.'
+                    });
+                });
+                Host.nextRound();
+            },
+
+            broadcast: (msg) => Host.players.forEach(p => p.conn.send(msg)),
+
+            nextRound: () => {
+                Host.state.churns = 0;
+                Host.state.votes = {};
+                Host.broadcast({ type: 'PHASE', name: 'CHURN', msg: 'Tap vigorously to churn the ocean!', round: Host.state.round, stability: Host.state.stability });
+
+                // Churn Phase lasts 10 seconds
+                setTimeout(() => Host.phaseVote(), 10000);
+            },
+
+            phaseVote: () => {
+                // Difficulty scales with players. 
+                // Need avg 3 taps per second per player to succeed.
+                const threshold = Host.players.length * 3 * 10; 
+                const success = Host.state.churns > threshold;
+
+                // Determine Item based on Churn Success + Round Number
+                let item = "";
+
+                if (!success) {
+                    item = "Halahala (Poison)";
+                } else {
+                    // Successful churn cycle
+                    const cycle = Host.state.round % 4;
+                    if (cycle === 1) item = "Kamadhenu (Cow)";
+                    else if (cycle === 2) item = "Airavata (Elephant)";
+                    else if (cycle === 3) item = "Amrita (Nectar)"; // Rare
+                    else item = "Halahala (Poison)"; // Random bad luck
+                }
+
+                Host.state.phaseItem = item;
+                Host.broadcast({ type: 'PHASE', name: 'VOTE', msg: `Emerged: ${item}`, item: item });
+            },
+
+            resolveRound: () => {
+                let keepCount = 0;
+                Object.values(Host.state.votes).forEach(v => { if(v) keepCount++; });
+
+                const majority = keepCount > (Host.players.length / 2);
+                const item = Host.state.phaseItem;
+
+                let msg = "";
+                let impact = 0;
+
+                if(majority) {
+                    // KEPT
+                    if(item.includes("Poison")) {
+                        msg = "Poison Consumed! Stability -30";
+                        impact = -30;
+                    } else if(item.includes("Amrita")) {
+                        msg = "AMRITA SECURED!";
+                        impact = 100; // Win condition
+                    } else {
+                        msg = "Blessing Accepted. Stability +10";
+                        impact = 10;
+                    }
+                } else {
+                    // DISCARDED
+                    if(item.includes("Poison")) {
+                        msg = "Poison Discarded. Safe.";
+                        impact = 0;
+                    } else if(item.includes("Amrita")) {
+                        msg = "AMRITA LOST! Stability -50";
+                        impact = -50;
+                    } else {
+                        msg = "Blessing Rejected. Stability -10";
+                        impact = -10;
+                    }
+                }
+
+                Host.state.stability += impact;
+                if(Host.state.stability > 100) Host.state.stability = 100;
+
+                Host.broadcast({ type: 'RESULT', msg: msg, stability: Host.state.stability });
+                Host.state.round++;
+
+                // Win/Loss Checks
+                if(Host.state.stability <= 0) {
+                    setTimeout(() => Host.broadcast({ type: 'GAMEOVER', msg: 'The Cosmos has Collapsed. Asuras Win.' }), 3000);
+                } else if(impact === 100) { // Amrita kept
+                     setTimeout(() => Host.broadcast({ type: 'GAMEOVER', msg: 'Immortality Achieved! Devas Win.' }), 3000);
+                } else if(Host.state.round > 7) {
+                     setTimeout(() => Host.broadcast({ type: 'GAMEOVER', msg: 'Time has run out. Balance Preserved.' }), 3000);
+                } else {
+                    setTimeout(Host.nextRound, 4000);
+                }
+            }
+        };
+
+        // --- CLIENT LOGIC ---
+        const Client = {
+            peer: null,
+            conn: null,
+            connect: () => {
+                const name = document.getElementById('join-name').value || 'Soul';
+                const code = document.getElementById('join-code').value.toUpperCase();
+                if(!code) return UI.toast("Code Required");
+
+                UI.toast("Connecting...");
+                Client.peer = new Peer();
+                Client.peer.on('open', id => {
+                    const conn = Client.peer.connect("sm-host-" + code);
+                    Client.conn = conn;
+                    conn.on('open', () => {
+                        conn.send({ type: 'JOIN', name: name });
+                    });
+                    conn.on('data', Client.handleData);
+                    conn.on('error', () => UI.toast("Host Not Found"));
+                });
+            },
+
+            handleData: (data) => {
+                if(data.type === 'WELCOME') UI.toast("Connected to Lobby");
+                else if(data.type === 'ROLE') {
+                    document.getElementById('role-name').innerText = data.role;
+                    document.getElementById('role-desc').innerText = data.desc;
+                    document.getElementById('role-secret').innerText = data.secret;
+
+                    const img = document.getElementById('role-img');
+                    if(data.role === 'Asura') img.classList.add('asura-crop');
+                    else img.classList.remove('asura-crop');
+
+                    UI.show('screen-role');
+                }
+                else if(data.type === 'PHASE') {
+                    UI.show('screen-play');
+                    document.getElementById('phase-name').innerText = data.name;
+                    document.getElementById('phase-msg').innerText = data.msg;
+                    document.getElementById('round-val').innerText = data.round || '-';
+                    document.getElementById('stability-val').innerText = (data.stability || 100) + '%';
+
+                    const content = document.getElementById('game-content');
+
+                    if(data.name === 'CHURN') {
+                        // Render Dial
+                        content.innerHTML = `
+                            <div class="churn-container">
+                                <div class="churn-mask">
+                                    <img src="./mount_mandara_churn.png" id="churn-dial" onerror="this.style.display='none'">
+                                </div>
+                                <div class="tap-hint">TAP</div>
+                            </div>`;
+                        // Bind events
+                        const dial = document.getElementById('churn-dial');
+                        const handler = (e) => { 
+                            if(e.cancelable) e.preventDefault(); 
+                            Client.churn(); 
+                        };
+                        const container = document.querySelector('.churn-container');
+                        container.addEventListener('mousedown', handler);
+                        container.addEventListener('touchstart', handler);
+                    } 
+                    else if(data.name === 'VOTE') {
+                        // Render Vote
+                        const iconClass = UI.getIconClass(data.item);
+                        content.innerHTML = `
+                            <div class="treasure-frame">
+                                <img src="./treasures_icons.png" class="icon-sprite ${iconClass}" onerror="this.style.display='none'">
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; width:100%;">
+                                <button class="btn btn-primary" onclick="Client.vote(true)">Keep</button>
+                                <button class="btn btn-danger" onclick="Client.vote(false)">Discard</button>
+                            </div>`;
+                    }
+                    AudioFX.play('alert');
+                }
+                else if(data.type === 'FX_CHURN') {
+                    const dial = document.getElementById('churn-dial');
+                    if(dial) {
+                        dial.style.transform = `rotate(${Math.random()*360}deg) scale(${1 + Math.random()*0.1})`;
+                    }
+                }
+                else if(data.type === 'RESULT') {
+                    document.getElementById('phase-name').innerText = "FATE";
+                    document.getElementById('phase-msg').innerText = data.msg;
+                    document.getElementById('stability-val').innerText = data.stability + '%';
+                    document.getElementById('game-content').innerHTML = '';
+                }
+                else if(data.type === 'GAMEOVER') {
+                    document.getElementById('phase-name').innerText = "GAME OVER";
+                    document.getElementById('phase-msg').innerText = data.msg;
+                    document.getElementById('game-content').innerHTML = `<button class="btn" onclick="location.reload()">Reincarnate</button>`;
+                }
+            },
+
+            churn: () => {
+                Client.conn.send({ type: 'CHURN' });
+                AudioFX.play('tap');
+                if(navigator.vibrate) navigator.vibrate(15);
+            },
+
+            vote: (val) => {
+                Client.conn.send({ type: 'VOTE', val: val });
+                document.getElementById('game-content').innerHTML = "<p style='margin-top:20px; color:#aaa;'>Vote Cast. Waiting for Council...</p>";
+            }
+        };
+
+        // --- STARS ---
+        const Cosmos = {
+            init: () => {
+                const c = document.getElementById('cosmos-canvas');
+                const x = c.getContext('2d');
+                let w, h;
+                const stars = Array(80).fill().map(() => ({ x:Math.random(), y:Math.random(), s:Math.random()*2, a:Math.random() }));
+
+                const resize = () => { w=c.width=innerWidth; h=c.height=innerHeight; };
+                window.onresize = resize; resize();
+
+                const loop = () => {
+                    x.clearRect(0,0,w,h);
+                    stars.forEach(s => {
+                        s.y -= s.s * 0.0005; 
+                        if(s.y<0) s.y=1;
+                        x.fillStyle = `rgba(255,255,255,${s.a})`;
+                        x.beginPath(); x.arc(s.x*w, s.y*h, s.s, 0, Math.PI*2); x.fill();
+                    });
+                    requestAnimationFrame(loop);
+                };
+                loop();
+            }
+        };
+        Cosmos.init();
+
+    </script>
+</body>
+</html>
